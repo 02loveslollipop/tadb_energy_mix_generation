@@ -49,6 +49,15 @@ Thumbs.db
 tmp/
 temp/
 
+# Docker
+.dockerignore
+
+# Azure
+.azure/
+
+# Local database
+postgres_data/
+
 # Certificate files
 *.pem
 *.key
