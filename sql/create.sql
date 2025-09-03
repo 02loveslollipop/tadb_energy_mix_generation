@@ -1,10 +1,12 @@
-CREATE SCHEMA core;
+
+
+CREATE SCHEMA IF NOT EXISTS core;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+DROP TABLE core.production;
 DROP TABLE core.generator;
 DROP TABLE core.type;
-DROP TABLE core.production;
 
 CREATE TABLE core.type(
     id  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
