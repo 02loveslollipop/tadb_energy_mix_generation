@@ -17,17 +17,17 @@ type Type struct {
 	UpdatedAt   time.Time `json:"updatedAt,omitempty" db:"updated_at"`
 }
 
-// CreateTypeRequest represents the request payload for creating a type
+// TypeCreateRequest represents the request payload for creating a type
 // @Description Request body for creating a new energy generator type
-type CreateTypeRequest struct {
+type TypeCreateRequest struct {
 	Name        string `json:"name" binding:"required,max=20" example:"Solar"`
 	Description string `json:"description" binding:"required,max=80" example:"Solar photovoltaic panels"`
 	IsRenewable bool   `json:"isRenewable" example:"true"`
 }
 
-// UpdateTypeRequest represents the request payload for updating a type
+// TypeUpdateRequest represents the request payload for updating a type
 // @Description Request body for updating an energy generator type
-type UpdateTypeRequest struct {
+type TypeUpdateRequest struct {
 	Name        string `json:"name,omitempty" binding:"omitempty,max=20" example:"Solar"`
 	Description string `json:"description,omitempty" binding:"omitempty,max=80" example:"Solar photovoltaic panels"`
 	IsRenewable *bool  `json:"isRenewable,omitempty" example:"true"`
