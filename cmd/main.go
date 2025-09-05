@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/02loveslollipop/api_matriz_enegertica_tadb/pkg/handlers"
 	"github.com/gin-gonic/gin"
@@ -14,12 +13,12 @@ func main() {
 	r := gin.Default()
 
 	// Initialize handlers
-	typeHandler := handlers.NewTypeHandler()
+	userHandler := handlers.NewUserHandler()
 
 	// Define basic routes
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"message": "Welcome to TADB Energy Matrix API",
+			"message": "Welcome to TADB API",
 			"status":  "running",
 			"version": "1.0.0",
 		})
@@ -35,35 +34,29 @@ func main() {
 	// API v1 routes
 	v1 := r.Group("/api/v1")
 	{
-		// Type routes (Energy Generator Types)
-		types := v1.Group("/types")
+		// User routes
+		users := v1.Group("/users")
 		{
-			types.GET("", typeHandler.GetTypes)
-			types.GET("/:id", typeHandler.GetTypeByID)
-			types.POST("", typeHandler.CreateType)
-			types.PUT("/:id", typeHandler.UpdateType)
-			types.DELETE("/:id", typeHandler.DeleteType)
+			users.GET("", userHandler.GetUsers)
+			users.GET("/:id", userHandler.GetUserByID)
+			users.POST("", userHandler.CreateUser)
+			users.PUT("/:id", userHandler.UpdateUser)
+			users.DELETE("/:id", userHandler.DeleteUser)
 		}
 	}
 
-	// Get port from environment variable or default to 8080
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	// Start the server
-	log.Printf("Starting TADB Energy Matrix API server on :%s", port)
+	// Start the server on port 8080
+	log.Println("Starting TADB API server on :8080")
 	log.Println("Available endpoints:")
 	log.Println("  GET    /")
 	log.Println("  GET    /health")
-	log.Println("  GET    /api/v1/types")
-	log.Println("  GET    /api/v1/types/:id")
-	log.Println("  POST   /api/v1/types")
-	log.Println("  PUT    /api/v1/types/:id")
-	log.Println("  DELETE /api/v1/types/:id")
+	log.Println("  GET    /api/v1/users")
+	log.Println("  GET    /api/v1/users/:id")
+	log.Println("  POST   /api/v1/users")
+	log.Println("  PUT    /api/v1/users/:id")
+	log.Println("  DELETE /api/v1/users/:id")
 
-	if err := r.Run(":" + port); err != nil {
+	if err := r.Run(":8080"); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
 }
