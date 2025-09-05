@@ -144,7 +144,7 @@ func (db *DB) Health(ctx context.Context) error {
 	return nil
 }
 
-func (db *DB) BeginTransaction(ctx context.Context) (pgxpool.Tx, error) {
+func (db *DB) BeginTransaction(ctx context.Context) (pgx.Tx, error) {
 	if db.Pool == nil {
 		return nil, fmt.Errorf("database connection pool is nil")
 	}

@@ -6,6 +6,16 @@ import (
 	"github.com/google/uuid"
 )
 
+// User represents a user in the system
+// @Description User account information
+type User struct {
+	ID        uuid.UUID `json:"id" db:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	Username  string    `json:"username" db:"username" binding:"required,max=50" example:"john_doe"`
+	Email     string    `json:"email" db:"email" binding:"required,email" example:"john@example.com"`
+	CreatedAt time.Time `json:"createdAt,omitempty" db:"created_at"`
+	UpdatedAt time.Time `json:"updatedAt,omitempty" db:"updated_at"`
+}
+
 // Type represents an energy generator type
 // @Description Energy generator type (renewable/non-renewable)
 type Type struct {
