@@ -157,7 +157,6 @@ func (db *DB) BeginTransaction(ctx context.Context) (pgx.Tx, error) {
 	return tx, nil
 }
 
-
 // Helper functions for environment variables
 func getEnvWithDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {

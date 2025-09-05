@@ -95,7 +95,7 @@ func (h *TypeHandler) GetTypeByID(c *gin.Context) {
 // @Router /types [get]
 func (h *TypeHandler) GetAllTypes(c *gin.Context) {
 	var isRenewable *bool
-	
+
 	if renewableParam := c.Query("renewable"); renewableParam != "" {
 		renewable, err := strconv.ParseBool(renewableParam)
 		if err != nil {
