@@ -65,3 +65,5 @@ postgres_data/
 
 # Air (live reload tool) temp files
 tmp/
+main
+github-secrets.txt
