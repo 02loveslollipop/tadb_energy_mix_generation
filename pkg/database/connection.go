@@ -37,6 +37,14 @@ func LoadConfig() (*Config, error) {
 	// Try to load .env file (ignore error if file doesn't exist)
 	_ = godotenv.Load()
 
+	// Check if DB_URI is provided (preferred method)
+	dbURI := os.Getenv("DB_URI")
+	if dbURI != "" {
+		// Parse the URI to get connection details
+		return parseDBURI(dbURI)
+	}
+
+	// Fallback to individual environment variables
 	config := &Config{
 		Host:            getEnvWithDefault("DB_HOST", "localhost"),
 		Port:            getEnvAsIntWithDefault("DB_PORT", 5432),
@@ -58,37 +66,94 @@ func LoadConfig() (*Config, error) {
 	return config, nil
 }
 
+// parseDBURI parses a PostgreSQL connection URI and returns a Config
+func parseDBURI(dbURI string) (*Config, error) {
+	// Parse the connection URI using pgx
+	pgxConfig, err := pgx.ParseConfig(dbURI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse DB_URI: %w", err)
+	}
+
+	config := &Config{
+		Host:            pgxConfig.Host,
+		Port:            int(pgxConfig.Port),
+		User:            pgxConfig.User,
+		Password:        pgxConfig.Password,
+		Database:        pgxConfig.Database,
+		SSLMode:         "require", // Default for cloud databases
+		MaxConnections:  int32(getEnvAsIntWithDefault("DB_MAX_CONNECTIONS", 25)),
+		MinConnections:  int32(getEnvAsIntWithDefault("DB_MIN_CONNECTIONS", 5)),
+		MaxConnLifetime: time.Duration(getEnvAsIntWithDefault("DB_MAX_CONN_LIFETIME", 60)) * time.Minute,
+		MaxConnIdleTime: time.Duration(getEnvAsIntWithDefault("DB_MAX_CONN_IDLE_TIME", 30)) * time.Minute,
+	}
+
+	// Override SSL mode if specified in URI
+	if sslMode, exists := pgxConfig.RuntimeParams["sslmode"]; exists {
+		config.SSLMode = sslMode
+	}
+
+	return config, nil
+}
+
 // NewConnection creates a new database connection pool
 func NewConnection(ctx context.Context) (*DB, error) {
-	config, err := LoadConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load database configuration: %w", err)
+	// Try to load .env file (ignore error if file doesn't exist)
+	_ = godotenv.Load()
+
+	var poolConfig *pgxpool.Config
+	var err error
+
+	// Check if DB_URI is provided (preferred method)
+	dbURI := os.Getenv("DB_URI")
+	if dbURI != "" {
+		// Use DB_URI directly for connection pool
+		poolConfig, err = pgxpool.ParseConfig(dbURI)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse DB_URI: %w", err)
+		}
+	} else {
+		// Fallback to individual environment variables
+		config, err := LoadConfig()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load database configuration: %w", err)
+		}
+
+		// Build connection string
+		dsn := fmt.Sprintf(
+			"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+			config.Host,
+			config.Port,
+			config.User,
+			config.Password,
+			config.Database,
+			config.SSLMode,
+		)
+
+		// Configure connection pool
+		poolConfig, err = pgxpool.ParseConfig(dsn)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse database configuration: %w", err)
+		}
 	}
 
-	// Build connection string
-	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		config.Host,
-		config.Port,
-		config.User,
-		config.Password,
-		config.Database,
-		config.SSLMode,
-	)
-
-	// Configure connection pool
-	poolConfig, err := pgxpool.ParseConfig(dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse database configuration: %w", err)
+	// Set pool configuration with defaults
+	if poolConfig.MaxConns == 0 {
+		poolConfig.MaxConns = int32(getEnvAsIntWithDefault("DB_MAX_CONNECTIONS", 25))
 	}
-
-	// Set pool configuration
-	poolConfig.MaxConns = config.MaxConnections
-	poolConfig.MinConns = config.MinConnections
-	poolConfig.MaxConnLifetime = config.MaxConnLifetime
-	poolConfig.MaxConnIdleTime = config.MaxConnIdleTime
+	if poolConfig.MinConns == 0 {
+		poolConfig.MinConns = int32(getEnvAsIntWithDefault("DB_MIN_CONNECTIONS", 5))
+	}
+	if poolConfig.MaxConnLifetime == 0 {
+		poolConfig.MaxConnLifetime = time.Duration(getEnvAsIntWithDefault("DB_MAX_CONN_LIFETIME", 60)) * time.Minute
+	}
+	if poolConfig.MaxConnIdleTime == 0 {
+		poolConfig.MaxConnIdleTime = time.Duration(getEnvAsIntWithDefault("DB_MAX_CONN_IDLE_TIME", 30)) * time.Minute
+	}
 
 	// Set connection parameters for better performance
+	if poolConfig.ConnConfig.RuntimeParams == nil {
+		poolConfig.ConnConfig.RuntimeParams = make(map[string]string)
+	}
 	poolConfig.ConnConfig.RuntimeParams["application_name"] = "tadb-api"
 	poolConfig.ConnConfig.RuntimeParams["search_path"] = "core,public"
 
@@ -104,10 +169,11 @@ func NewConnection(ctx context.Context) (*DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
+	// Log connection success
 	log.Printf("Successfully connected to PostgreSQL database: %s@%s:%d/%s",
-		config.User, config.Host, config.Port, config.Database)
+		poolConfig.ConnConfig.User, poolConfig.ConnConfig.Host, poolConfig.ConnConfig.Port, poolConfig.ConnConfig.Database)
 	log.Printf("Connection pool configured - Min: %d, Max: %d",
-		config.MinConnections, config.MaxConnections)
+		poolConfig.MinConns, poolConfig.MaxConns)
 
 	return &DB{Pool: pool}, nil
 }
