@@ -67,6 +67,7 @@ jobs:
         docker build -t $IMAGE_TAG .
         docker push $IMAGE_TAG
         echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+        echo "IMAGE_NAME=tadb-api:${{ github.sha }}" >> $GITHUB_ENV
 
     - name: Azure Login
       uses: azure/login@v1
@@ -81,7 +82,7 @@ jobs:
         acrPassword: ${{ secrets.REGISTRY_PASSWORD }}
         containerAppName: ${{ env.CONTAINER_APP_NAME }}
         resourceGroup: ${{ env.RESOURCE_GROUP }}
-        imageToDeploy: ${{ env.IMAGE_TAG }}
+        imageToDeploy: ${{ env.IMAGE_NAME }}
         containerAppEnvironment: ${{ env.CONTAINER_APP_ENVIRONMENT }}
         targetPort: 8080
         ingress: external
