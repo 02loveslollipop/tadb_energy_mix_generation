@@ -96,6 +96,6 @@ jobs:
         containerAppEnvironment: ${{ env.CONTAINER_APP_ENVIRONMENT }}
         targetPort: 8080
         ingress: external
-      env:
-        DB_URI: ${{ secrets.DB_URI }}
-        PORT: "8080"
+        environmentVariables: |
+          PORT=8080
+          DB_URI=${{ secrets.DB_URI }}
