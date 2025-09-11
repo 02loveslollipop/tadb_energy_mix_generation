@@ -39,19 +39,21 @@ def run(cmd: str, check: bool = True) -> subprocess.CompletedProcess:
     return cp
 
 
-def ensure_cli():
-    if run("az --version", check=False).returncode != 0:
-        print("Azure CLI not found. Install: https://aka.ms/azure-cli")
-        sys.exit(1)
-    if run("az account show", check=False).returncode != 0:
-        print("Not logged into Azure. Run: az login")
-        sys.exit(1)
-    if run("gh --version", check=False).returncode != 0:
-        print("GitHub CLI not found. Install: https://cli.github.com/")
-        sys.exit(1)
-    if run("gh auth status", check=False).returncode != 0:
-        print("Not logged into GitHub. Run: gh auth login")
-        sys.exit(1)
+def ensure_cli(require_az: bool = True, require_gh: bool = True):
+    if require_az:
+        if run("az --version", check=False).returncode != 0:
+            print("Azure CLI not found. Install: https://aka.ms/azure-cli")
+            sys.exit(1)
+        if run("az account show", check=False).returncode != 0:
+            print("Not logged into Azure. Run: az login")
+            sys.exit(1)
+    if require_gh:
+        if run("gh --version", check=False).returncode != 0:
+            print("GitHub CLI not found. Install: https://cli.github.com/")
+            sys.exit(1)
+        if run("gh auth status", check=False).returncode != 0:
+            print("Not logged into GitHub. Run: gh auth login")
+            sys.exit(1)
 
 
 def get_subscription() -> Dict[str, str]:
@@ -121,14 +123,48 @@ def main():
     ap.add_argument('--container-app-env', help='Container Apps environment name (optional)')
     ap.add_argument('--db-uri', help='Database connection URI (optional)')
     ap.add_argument('--db-name', help='Database name (optional)')
+    ap.add_argument('--creds-file', help='Path to existing AZURE_CREDENTIALS JSON file (optional)')
+    ap.add_argument('--creds-json', help='Inline AZURE_CREDENTIALS JSON string (optional)')
+    ap.add_argument('--dry-run', action='store_true', help='Print what would be set without calling az/gh')
     args = ap.parse_args()
 
-    ensure_cli()
     repo_full = f"{args.user}/{args.repo}"
 
-    sub = get_subscription()
-    sp = ensure_sp(sub['subscriptionId'])
-    acr = get_acr_info(args.resource_group, args.acr_name)
+    if args.dry_run:
+        print("[DRY RUN] Would create Service Principal and set: AZURE_CREDENTIALS")
+        print("[DRY RUN] Would set registry secrets if ACR is available: REGISTRY_LOGIN_SERVER, REGISTRY_USERNAME, REGISTRY_PASSWORD")
+        if args.resource_group:
+            print(f"[DRY RUN] Would set RESOURCE_GROUP={args.resource_group}")
+        if args.container_app_name:
+            print(f"[DRY RUN] Would set CONTAINER_APP_NAME={args.container_app_name}")
+        if args.container_app_env:
+            print(f"[DRY RUN] Would set CONTAINER_APP_ENVIRONMENT={args.container_app_env}")
+        if args.db_uri:
+            print(f"[DRY RUN] Would set DB_URI (redacted)")
+        if args.db_name:
+            print(f"[DRY RUN] Would set DB_NAME={args.db_name}")
+        return
+
+    # Real execution
+    require_az = True
+    if args.creds_file or args.creds_json:
+        # We can skip AZ login if creds provided AND no ACR lookup requested
+        require_az = bool(args.acr_name or args.resource_group)
+    ensure_cli(require_az=require_az, require_gh=True)
+
+    # Resolve credentials
+    if args.creds_json:
+        sp = json.loads(args.creds_json)
+    elif args.creds_file:
+        with open(args.creds_file, 'r', encoding='utf-8') as fh:
+            sp = json.load(fh)
+    else:
+        sub = get_subscription()
+        sp = ensure_sp(sub['subscriptionId'])
+
+    acr = None
+    if args.acr_name or args.resource_group:
+        acr = get_acr_info(args.resource_group, args.acr_name)
 
     # Upload secrets
     gh_set(repo_full, 'AZURE_CREDENTIALS', json.dumps(sp))
@@ -153,4 +189,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
