@@ -67,3 +67,7 @@ postgres_data/
 tmp/
 main
 github-secrets.txt
+# Local virtualenvs / Python caches
+.venv/
+__pycache__/
+*.pyc

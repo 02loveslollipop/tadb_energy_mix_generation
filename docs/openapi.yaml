@@ -1,0 +1,330 @@
+components:
+    schemas:
+        models.CreateTypeRequest:
+            description: Request body for creating a new energy generator type
+            properties:
+                description:
+                    example: Solar photovoltaic panels
+                    maxLength: 80
+                    type: string
+                isRenewable:
+                    example: true
+                    type: boolean
+                name:
+                    example: Solar
+                    maxLength: 20
+                    type: string
+            required:
+                - description
+                - name
+            type: object
+        models.ErrorResponse:
+            description: Error response structure
+            properties:
+                code:
+                    example: 400
+                    type: integer
+                error:
+                    example: Invalid input
+                    type: string
+                message:
+                    example: The provided data is invalid
+                    type: string
+            type: object
+        models.SuccessResponse:
+            description: Success response structure
+            properties:
+                data: {}
+                message:
+                    example: Operation completed successfully
+                    type: string
+            type: object
+        models.Type:
+            description: Energy generator type (renewable/non-renewable)
+            properties:
+                createdAt:
+                    type: string
+                description:
+                    example: Solar photovoltaic panels
+                    maxLength: 80
+                    type: string
+                id:
+                    example: 550e8400-e29b-41d4-a716-446655440000
+                    type: string
+                isRenewable:
+                    example: true
+                    type: boolean
+                name:
+                    example: Solar
+                    maxLength: 20
+                    type: string
+                updatedAt:
+                    type: string
+            required:
+                - description
+                - name
+            type: object
+        models.UpdateTypeRequest:
+            description: Request body for updating an energy generator type
+            properties:
+                description:
+                    example: Solar photovoltaic panels
+                    maxLength: 80
+                    type: string
+                isRenewable:
+                    example: true
+                    type: boolean
+                name:
+                    example: Solar
+                    maxLength: 20
+                    type: string
+            type: object
+        models.User:
+            description: User account information
+            properties:
+                createdAt:
+                    type: string
+                email:
+                    example: john@example.com
+                    type: string
+                id:
+                    example: 550e8400-e29b-41d4-a716-446655440000
+                    type: string
+                updatedAt:
+                    type: string
+                username:
+                    example: john_doe
+                    maxLength: 50
+                    type: string
+            required:
+                - email
+                - username
+            type: object
+info:
+    contact:
+        name: TADB API Support
+        url: https://github.com/02loveslollipop/api_matriz_enegertica_tadb
+    description: The TADB (Tabla de Análisis de Datos de Boletines) Energy Matrix API provides endpoints for managing energy generator types and basic health checks.
+    license:
+        name: MIT
+        url: https://opensource.org/licenses/MIT
+    title: TADB Energy Matrix API
+    version: 1.0.0
+openapi: 3.0.3
+paths:
+    /health:
+        get:
+            description: Check if the API is running
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.SuccessResponse'
+                    description: OK
+            summary: Health check
+            tags:
+                - health
+    /types:
+        get:
+            description: Get all energy generator types, optionally filtered by renewable status
+            parameters:
+                - description: Filter by renewable status (true/false)
+                  in: query
+                  name: renewable
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/models.Type'
+                                type: array
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Bad Request
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Internal Server Error
+            summary: Get all types
+            tags:
+                - types
+        post:
+            description: Create a new energy generator type (renewable/non-renewable)
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/models.CreateTypeRequest'
+                description: Type data
+                required: true
+                x-originalParamName: type
+            responses:
+                "201":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.Type'
+                    description: Created
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Bad Request
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Internal Server Error
+            summary: Create a new energy generator type
+            tags:
+                - types
+    /types/{id}:
+        delete:
+            description: Delete an energy generator type by ID
+            parameters:
+                - description: Type ID (UUID)
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "204":
+                    description: No Content
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Bad Request
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Not Found
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Internal Server Error
+            summary: Delete type
+            tags:
+                - types
+        get:
+            description: Get an energy generator type by its UUID
+            parameters:
+                - description: Type ID (UUID)
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.Type'
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Bad Request
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Not Found
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Internal Server Error
+            summary: Get type by ID
+            tags:
+                - types
+        put:
+            description: Update an existing energy generator type
+            parameters:
+                - description: Type ID (UUID)
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/models.UpdateTypeRequest'
+                description: Updated type data
+                required: true
+                x-originalParamName: type
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.Type'
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Bad Request
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Not Found
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Internal Server Error
+            summary: Update type
+            tags:
+                - types
+    /users/profile:
+        get:
+            description: Get the current user's profile information
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.User'
+                    description: OK
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/models.ErrorResponse'
+                    description: Internal Server Error
+            summary: Get user profile
+            tags:
+                - users
+servers:
+    - url: http://localhost/api/v1
+    - url: https://localhost/api/v1

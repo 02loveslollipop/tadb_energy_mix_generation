@@ -23,17 +23,20 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
-      - name: Generate OpenAPI (swag)
+      - name: Generate Swagger (swag)
         run: |
           go install github.com/swaggo/swag/cmd/swag@latest
           export PATH="$HOME/go/bin:$PATH"
-          swag init -g cmd/main.go -d cmd,pkg -o docs
+          swag init -g cmd/main.go -o docs
+      - name: Convert to OpenAPI 3
+        run: |
+          go run ./cmd/convert-openapi --in docs/swagger.yaml --out docs/openapi.yaml
       - name: Deploy API documentation
         uses: bump-sh/github-action@v1
         with:
           doc: tadb
           token: ${{ secrets.BUMP_SH_TOKEN }}
-          file: docs/swagger.yaml
+          file: docs/openapi.yaml
   api-diff:
     if: ${{ github.event_name == 'pull_request' }}
     name: Check API diff on Bump.sh
@@ -45,17 +48,20 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
-      - name: Generate OpenAPI (swag)
+      - name: Generate Swagger (swag)
         run: |
           go install github.com/swaggo/swag/cmd/swag@latest
           export PATH="$HOME/go/bin:$PATH"
-          swag init -g cmd/main.go -d cmd,pkg -o docs
+          swag init -g cmd/main.go -o docs
+      - name: Convert to OpenAPI 3
+        run: |
+          go run ./cmd/convert-openapi --in docs/swagger.yaml --out docs/openapi.yaml
       - name: Comment pull request with API diff
         uses: bump-sh/github-action@v1
         with:
           doc: tadb
           token: ${{ secrets.BUMP_SH_TOKEN }}
-          file: docs/swagger.yaml
+          file: docs/openapi.yaml
           command: diff
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

@@ -16,6 +16,7 @@ import (
     "context"
     "log"
     "net/http"
+    "os"
 
     "github.com/02loveslollipop/api_matriz_enegertica_tadb/pkg/database"
     "github.com/02loveslollipop/api_matriz_enegertica_tadb/pkg/handlers"
@@ -94,7 +95,11 @@ func main() {
     // Swagger UI endpoint
     r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	if err := r.Run(":8080"); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "8080"
+    }
+    if err := r.Run(":" + port); err != nil {
+        log.Fatalf("Failed to start server: %v", err)
+    }
 }

@@ -149,14 +149,37 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## API Documentation
 
-The project generates OpenAPI docs from code annotations using `swaggo/swag` and serves Swagger UI.
+The project generates docs using `swaggo/swag` (Swagger 2.0), then converts to OpenAPI 3.0 for publishing. Swagger UI is served by the app.
 
 - Local Swagger UI: `http://localhost:8080/swagger/index.html`
-- Generate spec locally:
+- Generate Swagger 2.0 locally:
 
 ```bash
 go install github.com/swaggo/swag/cmd/swag@latest
 swag init -g cmd/main.go -d cmd,pkg -o docs
 ```
 
-The generated files are written to `docs/swagger.json` and `docs/swagger.yaml`. The CI workflow publishes `docs/swagger.yaml` to Bump.sh.
+- Convert to OpenAPI 3.0 locally:
+
+```bash
+go run ./cmd/convert-openapi --in docs/swagger.yaml --out docs/openapi.yaml
+```
+
+The CI workflow generates `docs/swagger.yaml` and converts to `docs/openapi.yaml`, which is published to Bump.sh.
+
+## Azure Secrets Sync
+
+Use the single Python tool to create/retrieve Azure credentials and upload them to GitHub:
+
+```bash
+python azure_secrets_sync.py \
+  --user <github-user-or-org> \
+  --repo <repo-name> \
+  --resource-group <rg-name> \
+  --container-app-name <app-name> \
+  --container-app-env <env-name>
+```
+
+Optional flags: `--acr-name <acrName>`, `--db-uri <postgresUri>`, `--db-name <name>`.
+
+Prereqs: Azure CLI (logged in) and GitHub CLI (logged in).
