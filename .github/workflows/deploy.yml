@@ -66,16 +66,15 @@ jobs:
         echo "Testing Azure DNS connectivity..."
         nslookup microsoft.com 168.63.129.16 || echo "Azure DNS test failed"
         
-    - name: Login to ACR with Azure CLI Token
+    - name: Login to ACR with token
       env:
         REGISTRY_LOGIN_SERVER: ${{ env.REGISTRY_LOGIN_SERVER }}
       run: |
         echo "Deriving registry name from login server..."
-        REGISTRY_NAME=${REGISTRY_LOGIN_SERVER%%.azurecr.io}
-        REGISTRY_NAME=${REGISTRY_NAME##https://}
+        REGISTRY_NAME="${REGISTRY_LOGIN_SERVER%%-*}"
         echo "Using REGISTRY_NAME=$REGISTRY_NAME"
         echo "Getting ACR access token..."
-        TOKEN=$(az acr login --name "$REGISTRY_NAME" --expose-token --output tsv --query accessToken)
+        TOKEN=$(az acr login --name "$REGISTRY_NAME" --expose-token -o tsv --query accessToken)
         echo "Logging into Docker with access token..."
         echo "$TOKEN" | docker login "$REGISTRY_LOGIN_SERVER" --username 00000000-0000-0000-0000-000000000000 --password-stdin
 
