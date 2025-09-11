@@ -146,3 +146,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Gin Web Framework](https://github.com/gin-gonic/gin) - HTTP web framework
 - [PostgreSQL](https://www.postgresql.org/) - Database system
 - [UUID Extension](https://www.postgresql.org/docs/current/uuid-ossp.html) - UUID generation
+
+## API Documentation
+
+The project generates OpenAPI docs from code annotations using `swaggo/swag` and serves Swagger UI.
+
+- Local Swagger UI: `http://localhost:8080/swagger/index.html`
+- Generate spec locally:
+
+```bash
+go install github.com/swaggo/swag/cmd/swag@latest
+swag init -g cmd/main.go -d cmd,pkg -o docs
+```
+
+The generated files are written to `docs/swagger.json` and `docs/swagger.yaml`. The CI workflow publishes `docs/swagger.yaml` to Bump.sh.

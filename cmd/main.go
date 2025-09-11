@@ -1,13 +1,31 @@
 package main
 
-import (
-	"context"
-	"log"
-	"net/http"
+//
+//  Swagger/OpenAPI meta
+//  @title           TADB Energy Matrix API
+//  @version         1.0.0
+//  @description     The TADB (Tabla de Análisis de Datos de Boletines) Energy Matrix API provides endpoints for managing energy generator types and basic health checks.
+//  @contact.name    TADB API Support
+//  @contact.url     https://github.com/02loveslollipop/api_matriz_enegertica_tadb
+//  @license.name    MIT
+//  @license.url     https://opensource.org/licenses/MIT
+//  @schemes         http https
+//  @BasePath        /api/v1
 
-	"github.com/02loveslollipop/api_matriz_enegertica_tadb/pkg/database"
-	"github.com/02loveslollipop/api_matriz_enegertica_tadb/pkg/handlers"
-	"github.com/gin-gonic/gin"
+import (
+    "context"
+    "log"
+    "net/http"
+
+    "github.com/02loveslollipop/api_matriz_enegertica_tadb/pkg/database"
+    "github.com/02loveslollipop/api_matriz_enegertica_tadb/pkg/handlers"
+    "github.com/gin-gonic/gin"
+
+    // Swagger UI
+    swaggerFiles "github.com/swaggo/files"
+    ginSwagger "github.com/swaggo/gin-swagger"
+    // Generated docs (created by `swag init`)
+    _ "github.com/02loveslollipop/api_matriz_enegertica_tadb/docs"
 )
 
 func main() {
@@ -72,6 +90,9 @@ func main() {
 	log.Println("  PUT  /api/v1/types/:id")
 	log.Println("  DELETE /api/v1/types/:id")
 	log.Println("  GET  /api/v1/users/profile")
+
+    // Swagger UI endpoint
+    r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	if err := r.Run(":8080"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)

@@ -20,14 +20,14 @@ func NewUserHandler(repo database.Repository) *UserHandler {
 	}
 }
 
-// GetUserProfile handles GET /user/profile
+// GetUserProfile handles GET /users/profile
 // @Summary Get user profile
 // @Description Get the current user's profile information
 // @Tags users
 // @Produce json
 // @Success 200 {object} models.User
 // @Failure 500 {object} models.ErrorResponse
-// @Router /user/profile [get]
+// @Router /users/profile [get]
 func (h *UserHandler) GetUserProfile(c *gin.Context) {
 	// TODO: Implement user profile retrieval
 	// This is a placeholder implementation
