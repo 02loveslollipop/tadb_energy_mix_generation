@@ -4,6 +4,10 @@
 *.dll
 *.so
 *.dylib
+*.a
+*.o
+*.wasm
+*.bin
 
 # Test binary, built with `go test -c`
 *.test
@@ -20,6 +24,10 @@ go.work
 # Build artifacts
 bin/
 dist/
+
+# Root build outputs
+main
+main.exe
 
 # Environment variables
 .env
