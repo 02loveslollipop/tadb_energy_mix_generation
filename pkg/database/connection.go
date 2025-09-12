@@ -1,12 +1,13 @@
 package database
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"os"
-	"strconv"
-	"time"
+    "context"
+    "fmt"
+    "log"
+    "os"
+    "strconv"
+    "time"
+    "strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -38,11 +39,11 @@ func LoadConfig() (*Config, error) {
 	_ = godotenv.Load()
 
 	// Check if DB_URI is provided (preferred method)
-	dbURI := os.Getenv("DB_URI")
-	if dbURI != "" {
-		// Parse the URI to get connection details
-		return parseDBURI(dbURI)
-	}
+    dbURI := strings.TrimSpace(os.Getenv("DB_URI"))
+    if dbURI != "" {
+        // Parse the URI to get connection details
+        return parseDBURI(dbURI)
+    }
 
 	// Fallback to individual environment variables
 	config := &Config{
@@ -104,12 +105,12 @@ func NewConnection(ctx context.Context) (*DB, error) {
 	var err error
 
 	// Check if DB_URI is provided (preferred method)
-	dbURI := os.Getenv("DB_URI")
-	if dbURI != "" {
-		// Use DB_URI directly for connection pool
-		poolConfig, err = pgxpool.ParseConfig(dbURI)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse DB_URI: %w", err)
+    dbURI := strings.TrimSpace(os.Getenv("DB_URI"))
+    if dbURI != "" {
+        // Use DB_URI directly for connection pool
+        poolConfig, err = pgxpool.ParseConfig(dbURI)
+        if err != nil {
+            return nil, fmt.Errorf("failed to parse DB_URI: %w", err)
 		}
 	} else {
 		// Fallback to individual environment variables
