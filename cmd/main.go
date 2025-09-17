@@ -47,6 +47,8 @@ func main() {
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(repo)
 	typeHandler := handlers.NewTypeHandler(repo)
+	generatorHandler := handlers.NewGeneratorHandler(repo)
+	productionHandler := handlers.NewProductionHandler(repo)
 
 	// Define basic routes
 	r.GET("/", func(c *gin.Context) {
@@ -78,6 +80,26 @@ func main() {
 		{
 			users.GET("/profile", userHandler.GetUserProfile)
 		}
+
+		// Generators routes
+		generators := v1.Group("/generators")
+		{
+			generators.GET("", generatorHandler.GetAllGenerators)
+			generators.GET("/:id", generatorHandler.GetGeneratorByID)
+			generators.POST("", generatorHandler.CreateGenerator)
+			generators.PUT("/:id", generatorHandler.UpdateGenerator)
+			generators.DELETE("/:id", generatorHandler.DeleteGenerator)
+		}
+
+		// Productions routes (with mixed search via query params)
+		productions := v1.Group("/productions")
+		{
+			productions.GET("", productionHandler.GetAllProductions)
+			productions.GET("/:id", productionHandler.GetProductionByID)
+			productions.POST("", productionHandler.CreateProduction)
+			productions.PUT("/:id", productionHandler.UpdateProduction)
+			productions.DELETE("/:id", productionHandler.DeleteProduction)
+		}
 	}
 
 	// Start the server on port 8080
@@ -91,6 +113,16 @@ func main() {
 	log.Println("  PUT  /api/v1/types/:id")
 	log.Println("  DELETE /api/v1/types/:id")
 	log.Println("  GET  /api/v1/users/profile")
+	log.Println("  GET  /api/v1/generators")
+	log.Println("  POST /api/v1/generators")
+	log.Println("  GET  /api/v1/generators/:id")
+	log.Println("  PUT  /api/v1/generators/:id")
+	log.Println("  DELETE /api/v1/generators/:id")
+	log.Println("  GET  /api/v1/productions")
+	log.Println("  POST /api/v1/productions")
+	log.Println("  GET  /api/v1/productions/:id")
+	log.Println("  PUT  /api/v1/productions/:id")
+	log.Println("  DELETE /api/v1/productions/:id")
 
     // Swagger UI endpoint
     r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

@@ -27,6 +27,7 @@ import subprocess
 import sys
 from datetime import datetime
 from typing import Dict, Optional
+from urllib.parse import urlparse, parse_qs
 
 
 def run(cmd: str, check: bool = True) -> subprocess.CompletedProcess:
@@ -59,6 +60,31 @@ def ensure_cli(require_az: bool = True, require_gh: bool = True):
 def get_subscription() -> Dict[str, str]:
     res = run('az account show --query "{subscriptionId:id, tenantId:tenantId, name:name}" -o json')
     return json.loads(res.stdout)
+
+
+def parse_db_uri(db_uri: str) -> Optional[Dict[str, str]]:
+    """Parse a PostgreSQL DB URI into discrete components for fallback secrets."""
+    try:
+        p = urlparse(db_uri)
+        if p.scheme not in ("postgres", "postgresql"):
+            return None
+        user = p.username or ""
+        pwd = p.password or ""
+        host = p.hostname or ""
+        port = str(p.port or 5432)
+        db = (p.path or "/").lstrip("/")
+        q = parse_qs(p.query or "")
+        sslmode = (q.get("sslmode", [""]) or [""])[0]
+        return {
+            "DB_HOST": host,
+            "DB_PORT": port,
+            "DB_USER": user,
+            "DB_PASSWORD": pwd,
+            "DB_NAME": db,
+            "DB_SSL_MODE": sslmode or "",
+        }
+    except Exception:
+        return None
 
 
 def ensure_sp(subscription_id: str, name_prefix: str = "sp-github-tadb-api") -> Dict[str, str]:
@@ -126,6 +152,7 @@ def main():
     ap.add_argument('--creds-file', help='Path to existing AZURE_CREDENTIALS JSON file (optional)')
     ap.add_argument('--creds-json', help='Inline AZURE_CREDENTIALS JSON string (optional)')
     ap.add_argument('--dry-run', action='store_true', help='Print what would be set without calling az/gh')
+    ap.add_argument('--upload-db-components', action='store_true', help='Also upload DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME derived from --db-uri')
     args = ap.parse_args()
 
     repo_full = f"{args.user}/{args.repo}"
@@ -141,6 +168,11 @@ def main():
             print(f"[DRY RUN] Would set CONTAINER_APP_ENVIRONMENT={args.container_app_env}")
         if args.db_uri:
             print(f"[DRY RUN] Would set DB_URI (redacted)")
+            if args.upload_db_components:
+                parts = parse_db_uri(args.db_uri)
+                if parts:
+                    red = parts.copy(); red['DB_PASSWORD'] = '<redacted>'
+                    print(f"[DRY RUN] Would set discrete DB_*: {json.dumps(red)}")
         if args.db_name:
             print(f"[DRY RUN] Would set DB_NAME={args.db_name}")
         return
@@ -181,6 +213,16 @@ def main():
         gh_set(repo_full, 'CONTAINER_APP_ENVIRONMENT', args.container_app_env)
     if args.db_uri:
         gh_set(repo_full, 'DB_URI', args.db_uri)
+        if args.upload_db_components:
+            parts = parse_db_uri(args.db_uri)
+            if parts:
+                gh_set(repo_full, 'DB_HOST', parts['DB_HOST'])
+                gh_set(repo_full, 'DB_PORT', parts['DB_PORT'])
+                gh_set(repo_full, 'DB_USER', parts['DB_USER'])
+                gh_set(repo_full, 'DB_PASSWORD', parts['DB_PASSWORD'])
+                gh_set(repo_full, 'DB_NAME', parts['DB_NAME'])
+                if parts['DB_SSL_MODE']:
+                    gh_set(repo_full, 'DB_SSL_MODE', parts['DB_SSL_MODE'])
     if args.db_name:
         gh_set(repo_full, 'DB_NAME', args.db_name)
 

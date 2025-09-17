@@ -1,13 +1,13 @@
 package database
 
 import (
-    "context"
-    "fmt"
-    "log"
-    "os"
-    "strconv"
-    "time"
-    "strings"
+	"context"
+	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -39,11 +39,11 @@ func LoadConfig() (*Config, error) {
 	_ = godotenv.Load()
 
 	// Check if DB_URI is provided (preferred method)
-    dbURI := strings.TrimSpace(os.Getenv("DB_URI"))
-    if dbURI != "" {
-        // Parse the URI to get connection details
-        return parseDBURI(dbURI)
-    }
+	dbURI := strings.TrimSpace(os.Getenv("DB_URI"))
+	if dbURI != "" {
+		// Parse the URI to get connection details
+		return parseDBURI(dbURI)
+	}
 
 	// Fallback to individual environment variables
 	config := &Config{
@@ -57,11 +57,6 @@ func LoadConfig() (*Config, error) {
 		MinConnections:  int32(getEnvAsIntWithDefault("DB_MIN_CONNECTIONS", 5)),
 		MaxConnLifetime: time.Duration(getEnvAsIntWithDefault("DB_MAX_CONN_LIFETIME", 60)) * time.Minute,
 		MaxConnIdleTime: time.Duration(getEnvAsIntWithDefault("DB_MAX_CONN_IDLE_TIME", 30)) * time.Minute,
-	}
-
-	// Validate required configuration
-	if config.Password == "" {
-		return nil, fmt.Errorf("DB_PASSWORD environment variable is required")
 	}
 
 	return config, nil
@@ -105,12 +100,17 @@ func NewConnection(ctx context.Context) (*DB, error) {
 	var err error
 
 	// Check if DB_URI is provided (preferred method)
-    dbURI := strings.TrimSpace(os.Getenv("DB_URI"))
-    if dbURI != "" {
-        // Use DB_URI directly for connection pool
-        poolConfig, err = pgxpool.ParseConfig(dbURI)
-        if err != nil {
-            return nil, fmt.Errorf("failed to parse DB_URI: %w", err)
+	dbURI := strings.TrimSpace(os.Getenv("DB_URI"))
+	if dbURI != "" {
+		// Use DB_URI directly for connection pool
+		poolConfig, err = pgxpool.ParseConfig(dbURI)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse DB_URI: %w", err)
+		}
+		// Log chosen path (sanitized)
+		if poolConfig != nil && poolConfig.ConnConfig != nil {
+			log.Printf("Using DB_URI for connection (user=%s host=%s port=%d db=%s)",
+				poolConfig.ConnConfig.User, poolConfig.ConnConfig.Host, poolConfig.ConnConfig.Port, poolConfig.ConnConfig.Database)
 		}
 	} else {
 		// Fallback to individual environment variables
@@ -135,6 +135,8 @@ func NewConnection(ctx context.Context) (*DB, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse database configuration: %w", err)
 		}
+		log.Printf("Using discrete DB_* env vars for connection (user=%s host=%s port=%d db=%s)",
+			config.User, config.Host, config.Port, config.Database)
 	}
 
 	// Set pool configuration with defaults
