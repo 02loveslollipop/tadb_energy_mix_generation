@@ -1,4 +1,4 @@
-name: Deploy to Heroku
+name: Deploy to Heroku (git push)
 
 on:
   push:
@@ -10,13 +10,54 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy
-        uses: akhileshns/heroku-deploy@v4.2.0
-        with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
-          heroku_email: ${{ secrets.HEROKU_EMAIL }}
-          dontuseforce: true
-          usedocker: false
+
+      - name: Ensure Go buildpack is set
         env:
-          GO_INSTALL_PACKAGE_SPEC: ./cmd
+          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          curl -fsSL -X PUT \
+            -H "Accept: application/vnd.heroku+json; version=3.buildpack-installations" \
+            -H "Authorization: Bearer ${HEROKU_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{"updates":[{"buildpack":"heroku/go"}]}' \
+            https://api.heroku.com/apps/${HEROKU_APP_NAME}/buildpack-installations
+
+      - name: Set Heroku config vars
+        env:
+          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          DB_URI: ${{ secrets.DB_URI }}
+        run: |
+          cat > payload.json <<EOF
+          {
+            "GO_INSTALL_PACKAGE_SPEC": "./cmd",
+            "DB_URI": "${DB_URI}"
+          }
+          EOF
+          curl -fsSL -X PATCH \
+            -H "Accept: application/vnd.heroku+json; version=3" \
+            -H "Authorization: Bearer ${HEROKU_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d @payload.json \
+            https://api.heroku.com/apps/${HEROKU_APP_NAME}/config-vars
+
+      - name: Push to Heroku
+        env:
+          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          git remote add heroku https://heroku:${HEROKU_API_KEY}@git.heroku.com/${HEROKU_APP_NAME}.git
+          git push heroku HEAD:main -f
+
+      - name: Ensure web dyno is running (scale web=1)
+        env:
+          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          curl -fsSL -X PATCH \
+            -H "Accept: application/vnd.heroku+json; version=3" \
+            -H "Authorization: Bearer ${HEROKU_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{"quantity":1}' \
+            https://api.heroku.com/apps/${HEROKU_APP_NAME}/formation/web
