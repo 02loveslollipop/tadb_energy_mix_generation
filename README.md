@@ -103,6 +103,33 @@ make build
 
 The server will start on `http://localhost:8080`
 
+# Deploy (Heroku buildpack)
+
+This app can be deployed to Heroku using the official Go buildpack.
+
+1) Create the app and set config vars
+
+```bash
+heroku create <your-app>
+heroku buildpacks:set heroku/go -a <your-app>
+heroku config:set GO_INSTALL_PACKAGE_SPEC=./cmd -a <your-app>
+# Set your database URI (single line)
+heroku config:set DB_URI='postgresql://user:pass@host:5432/db?sslmode=require' -a <your-app>
+```
+
+2) Procfile (already included)
+
+```
+web: bin/cmd
+```
+
+3) Push to deploy
+
+```bash
+git push heroku main
+# Or, use the provided GitHub Action: set HEROKU_API_KEY, HEROKU_APP_NAME, HEROKU_EMAIL secrets
+```
+
 # Features
 
 ## API Endpoints
@@ -167,19 +194,4 @@ go run ./cmd/convert-openapi --in docs/swagger.yaml --out docs/openapi.yaml
 
 The CI workflow generates `docs/swagger.yaml` and converts to `docs/openapi.yaml`, which is published to Bump.sh.
 
-## Azure Secrets Sync
-
-Use the single Python tool to create/retrieve Azure credentials and upload them to GitHub:
-
-```bash
-python azure_secrets_sync.py \
-  --user <github-user-or-org> \
-  --repo <repo-name> \
-  --resource-group <rg-name> \
-  --container-app-name <app-name> \
-  --container-app-env <env-name>
-```
-
-Optional flags: `--acr-name <acrName>`, `--db-uri <postgresUri>`, `--db-name <name>`.
-
-Prereqs: Azure CLI (logged in) and GitHub CLI (logged in).
+<!-- Azure deployment content removed; using Heroku buildpack via GitHub Actions. -->

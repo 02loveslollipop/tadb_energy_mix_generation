@@ -1,0 +1,14 @@
+{
+  "name": "tadb-api",
+  "description": "TADB Energy Matrix API (Go + Gin)",
+  "env": {
+    "GO_INSTALL_PACKAGE_SPEC": {
+      "description": "Main package to build",
+      "value": "./cmd"
+    }
+  },
+  "buildpacks": [
+    { "url": "heroku/go" }
+  ]
+}
+
